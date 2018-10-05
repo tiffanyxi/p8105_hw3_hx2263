@@ -17,27 +17,27 @@ knitr::opts_chunk$set(
 library(ggplot2)
 ```
 
-#Problem 1
+# Problem 1
 
-Load the `BRFSS` data from the p8105.datasets package
+* Load the `BRFSS` data from the p8105.datasets package.
 
-```{r data_import, message = FALSE}
+```{r df1_import, message = FALSE}
 devtools::install_github("p8105/p8105.datasets")
 library(p8105.datasets)
 ```
 
-Data cleaning
+* Data cleaning
 
-```{r}
+```{r df1_clean}
 brfss = brfss_smart2010 %>% 
   janitor::clean_names() %>% 
   filter(topic == "Overall Health") %>% 
-  #select(-class, -topic, -question, -sample_size, -(confidence_limit_low:geo_location)) %>% 
+#select(-class, -topic, -question, -sample_size, -(confidence_limit_low:geo_location)) %>% 
   filter(response == "Excellent"| response == "Very good"| response == "Good"| response == "Fair"| response == "Poor") %>% 
   mutate(response = as.factor(response))
 ```
 
-Using this dataset, answer the question
+### Answers
 
 1.In 2002, which states were observed at 7 locations?
 
@@ -53,7 +53,7 @@ In 2002, the states which were observed at 7 locations are `r (brfss %>% filter(
 
 2.Make a “spaghetti plot” that shows the number of observations in each state from 2002 to 2010.
 
-```{r}
+```{r spaghetti_plot}
 brfss %>% 
   distinct(year, locationdesc, .keep_all = TRUE) %>% 
   filter(year > 2001 & year < 2011) %>% 
@@ -71,7 +71,7 @@ brfss %>%
 
 3.Make a table showing, for the years 2002, 2006, and 2010, the mean and standard deviation of the proportion of “Excellent” responses across locations in NY State.
 
-```{r}
+```{r mean_sd_table}
 brfss %>% 
   filter(locationabbr == "NY" & (year == 2002 | year == 2006 | year == 2010) & response == "Excellent") %>% 
   group_by(year) %>% 
@@ -82,14 +82,14 @@ brfss %>%
 
 4.For each year and state, compute the average proportion in each response category (taking the average across locations in a state). 
 
-```{r}
+```{r avg_prop}
 avg_prop_rep = brfss %>% 
   group_by(year, locationabbr, response) %>% 
   summarize(avg_prop = round(mean(data_value, na.rm = TRUE), digits = 2))
 ```
 
 Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
-```{r}
+```{r five_panel}
 ggplot(data = avg_prop_rep, aes(x = year, y = avg_prop, color = locationabbr)) +
     facet_grid( ~ response) +
     geom_line() +
@@ -97,7 +97,7 @@ ggplot(data = avg_prop_rep, aes(x = year, y = avg_prop, color = locationabbr)) +
     theme(legend.position = "bottom")
 ```
 
-```{r}
+```{r five_plot}
 excel_rep = avg_prop_rep %>% filter(response == "Excellent")
 vg_rep = avg_prop_rep %>% filter(response == "Very good")
 good_rep = avg_prop_rep %>% filter(response == "Good")
@@ -127,4 +127,77 @@ ggplot(data = avg_prop_rep, aes(x = year, y = avg_prop, color = locationabbr)) +
     theme(legend.position = "bottom")
 
 ```
+
+# Problem 2
+
+* Load the `instacart` data from the p8105.datasets package and take a look.
+
+```{r}
+instacart = p8105.datasets::instacart
+head(instacart)
+```
+
+### Description
+
+The `instacart` dataset has `r ncol(instacart)` columns and `r nrow(instacart)` rows, which means it contains `r nrow(instacart)` observations and `r ncol(instacart)` variables. Each row in the dataset is a product information from an order. The structure of this dataset is *Tabular Data*. As far as I am concerned, this dataset describes the orders and reorder detail from customer `user_id` though Instacart app.
+
+The key variables are `order_id`, `product_id` and `product_name`. We can see the user `user_id` bought `product_id` which is `product_name` belonging to `department` and located in `aisle`. We can also know how frequent one customer use this app to do grocery shopping according to `days_since_prior_order` and `order_number`. 
+
+For example, the `user_id`1 made `order_id`1187899. He/she bought 11 items in `order_number`11 `days_since_prior_order`14 days after his/her last shopping, among which the `add_to_cart_order`9 was the first time order, other 10 items were reorders. `product_id`196 is Soda in `aisle`soft drinks `aisle_id`77 in `department`beverages which id is 7.
+
+### Answers
+
+1.How many aisles are there, and which aisles are the most items ordered from?
+
+There are `r nrow(instacart %>% count(aisle))` aisles.
+
+`r (instacart %>% count(aisle) %>% mutate(aisle_ranking = min_rank(desc(n))) %>% filter(aisle_ranking < 4))$aisle` aisle are the top 3 aisles which most items ordered from.
+Among those, `r (instacart %>% count(aisle) %>% mutate(aisle_ranking = min_rank(desc(n))) %>% filter(aisle_ranking < 2))$aisle` aisle ranks first.
+
+
+2.Make a plot that shows the number of items ordered in each aisle. Order aisles sensibly, and organize your plot so others can read it.
+
+```{r}
+ggplot(data = instacart, aes(x = aisle)) +
+  geom_bar(position = position_stack(reverse = TRUE)) +
+  coord_flip() +
+  labs(
+      title = "The Number of Items Ordered in Each Aisle",
+      y = "the Number of Items (counts)",
+      x = "Aisle",
+      caption = "Data from the p8105.package"
+    ) +
+  theme_bw()
+```
+
+
+3.Make a table showing the most popular item aisles "baking ingredients", "dog food care", and "packaged vegetables fruits"
+
+```{r}
+instacart %>% 
+  filter(aisle == "baking ingredients"| aisle == "dog food care"| aisle == "packaged vegetables fruits") %>% 
+  group_by(aisle) %>% 
+  count(product_name) %>% 
+  mutate(item_ranking = min_rank(desc(n))) %>% 
+  filter(item_ranking < 2) %>% 
+  knitr::kable()
+```
+
+4.Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+
+```{r}
+instacart %>% 
+  filter(product_name == "Pink Lady Apples"| product_name == "Coffee Ice Cream" ) %>% 
+  group_by(product_name, order_dow) %>% 
+  summarise(mean_hour = mean(order_hour_of_day)) %>% 
+  spread(key = order_dow, value = mean_hour) %>% 
+  knitr::kable(digits = 2)
+```
+
+
+
+
+
+
+
 
