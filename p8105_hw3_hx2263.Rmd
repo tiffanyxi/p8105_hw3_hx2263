@@ -4,7 +4,7 @@ author: "Tiffany Xi"
 date: "10/5/2018"
 output: github_document
 ---
-
+(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)
 ```{r setup, include=FALSE}
 library(tidyverse)
 
@@ -195,9 +195,79 @@ instacart %>%
 ```
 
 
+# Problem 3
+
+* Load the `NY NOAA` data from the p8105.datasets package
+```{r}
+noaa = p8105.datasets::ny_noaa
+```
+
+### Description
+The `noaa` dataset has `r ncol(noaa)` columns and `r nrow(noaa)` rows, which means it contains `r nrow(noaa)` observations and `r ncol(noaa)` variables. The structure of this dataset is *Tabular Data*. 
+
+The key variables are `id`, `date`, `prcp`, `snow`, `snwd`, `tmax` and `tmin`. Each row in the dataset is a weather information including precipitation`prcp`, snowfall`snow`, snow depth`snwd`, maximum temperature`tmax` and min temperature`tmin` from one single weather station`id` in one day`date`. This dataset describes five core variables for all New York state weather stations from January 1, 1981 through December 31, 2010 according to `r nrow(noaa %>% distinct(id))` weather stations.
+
+Missing values is a huge issue in this dataset, the number of missing number in five core variables are `r sum(is.na(noaa$prcp))`, `r sum(is.na(noaa$snow))`, `r sum(is.na(noaa$snwd))`, `r sum(is.na(noaa$tmax))` and `r sum(is.na(noaa$tmin))`. Those are huge numbers and almost half of the whole rows doesn't have tmax and tmin. 
+
+### Answers
+
+1.Do some data cleaning. Create separate variables for year, month, and day. Ensure observations for temperature, precipitation, and snowfall are given in reasonable units. 
+
+```{r}
+noaa_tidy = noaa %>% 
+  separate(date, into = c("year", "month", "day"), sep = "-") %>% 
+  mutate(pcrp_mm = ifelse(is.na(prcp), NA, prcp / 10),
+         snow_mm = snow,
+         tmax_ºC = ifelse(is.na(tmax), NA, as.integer(tmax)/ 10),
+         tmin_ºC = ifelse(is.na(tmin), NA, as.integer(tmin)/ 10)) %>% 
+  select(-prcp, -snow, -tmax, -tmin)
+```
+
+For snowfall, what are the most commonly observed values? Why?
+
+```{r}
+noaa_tidy %>% 
+  count(snow_mm) %>% 
+  mutate(snow_ranking = min_rank(desc(n))) %>% 
+  filter(snow_ranking < 2)
+```
+
+* For snowfall, 0 are the most commonly observed values, because snow only happens in winter which is one over four seasons, so other seasons take up three fourth days. Also, only when temperature goes below zero can snow, which takes up a smaller percentage of New York State winter temp. So 0mm snowfall is the most commonly observed values.
 
 
+2.Make a two-panel plot showing the average temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
 
+```{r}
+noaa_tidy %>% 
+  filter(month == "01" | month == "07") %>% 
+  group_by(year, month) %>% 
+  summarize(mean_tmax = mean(tmax_ºC, na.rm = TRUE)) %>% 
+  ggplot(aes(x = year, y = mean_tmax, color = month)) +
+  geom_point(size = 4)
 
+noaa_tidy %>% 
+  filter(month == "01" | month == "07") %>% 
+  group_by(year, month) %>% 
+  summarize(mean_tmin = mean(tmin_ºC, na.rm = TRUE)) %>% 
+  ggplot(aes(x = year, y = mean_tmin, color = month)) +
+  geom_point(size = 4)
+```
 
+3.Make a two-panel plot showing 
+(i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option);
+(ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+
+```{r}
+ggplot(data = noaa_tidy, aes(x = year, y = tmax_ºC)) +
+  geom_point()
+```
+
+```{r}
+snow_year = noaa_tidy %>% 
+  filter(snow_mm > 0 & snow_mm < 100) %>% 
+  group_by(year, snow_mm)
+
+#ggplot(data = snow_year, aes(x = mean(snow_mm, na.rm = TRUE))) +
+  #geom_histogram()
+```
 
