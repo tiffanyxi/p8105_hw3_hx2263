@@ -7,34 +7,33 @@ output: github_document
 (commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(p8105.datasets)
+library(patchwork)
 
 knitr::opts_chunk$set(
   fig.width = 10,
   fig.asp = .6,
   out.width = "90%"
 )
-
-library(ggplot2)
 ```
 
 # Problem 1
 
-* Load the `BRFSS` data from the p8105.datasets package.
+###Load the `BRFSS` data from the p8105.datasets package.
 
-```{r df1_import, message = FALSE}
-devtools::install_github("p8105/p8105.datasets")
-library(p8105.datasets)
+```{r df1_import}
+brfss = p8105.datasets::brfss_smart2010
 ```
 
-* Data cleaning
+###Data cleaning
 
 ```{r df1_clean}
-brfss = brfss_smart2010 %>% 
+brfss_tidy = brfss %>% 
   janitor::clean_names() %>% 
   filter(topic == "Overall Health") %>% 
-#select(-class, -topic, -question, -sample_size, -(confidence_limit_low:geo_location)) %>% 
-  filter(response == "Excellent"| response == "Very good"| response == "Good"| response == "Fair"| response == "Poor") %>% 
-  mutate(response = as.factor(response))
+  rename(state = locationabbr, location = locationdesc) %>%
+  filter(response %in% c("Excellent", "Very good", "Good", "Fair", "Poor")) %>% 
+  mutate(response = factor(response, levels = c("Excellent", "Very good", "Good", "Fair", "Poor")))
 ```
 
 ### Answers
@@ -42,60 +41,94 @@ brfss = brfss_smart2010 %>%
 1.In 2002, which states were observed at 7 locations?
 
 ```{r}
-brfss %>% 
+brfss_tidy %>% 
   filter(year == 2002) %>% 
-  distinct(locationdesc, .keep_all = TRUE) %>% 
-  count(locationabbr) %>% 
+  distinct(location, .keep_all = TRUE) %>% 
+  count(state) %>% 
   filter(n == 7)
 ```
 
-In 2002, the states which were observed at 7 locations are `r (brfss %>% filter(year == 2002) %>% distinct(locationdesc, .keep_all = TRUE) %>% count(locationabbr) %>% filter(n == 7))$locationabbr`.
+In 2002, the states which were observed at 7 locations are CT (Connecticut), FL (Florida), NC (North Carolina) `r (brfss_tidy %>% filter(year == 2002) %>% distinct(location, .keep_all = TRUE) %>% count(state) %>% filter(n == 7))$state`.
 
-2.Make a “spaghetti plot” that shows the number of observations in each state from 2002 to 2010.
+**Comment** Three states were observed exatly at 7 locations in 2002, what a coincidence!
+
+2.Make a "spaghetti plot" that shows the number of observations in each state from 2002 to 2010.
 
 ```{r spaghetti_plot}
-brfss %>% 
-  distinct(year, locationdesc, .keep_all = TRUE) %>% 
+spaghetti = brfss_tidy %>% 
+  distinct(year, location, .keep_all = TRUE) %>% 
+  group_by(year, state) %>%
   filter(year > 2001 & year < 2011) %>% 
-  group_by(year, locationabbr) %>% 
-  summarize(number = n()) %>% 
-  ggplot(aes(x = year, y = number, color = locationabbr)) +
-  geom_point(size = .5, alpha = .5) +
-  geom_line(alpha = .6) +
+  summarize(sum_loco = n()) 
+
+ggplot(data = spaghetti, aes(x = year, y = sum_loco, color = state)) +
+  geom_line(alpha = .7) +
+  geom_text(data = filter(spaghetti, state == "FL"),
+            aes(label = state), show.legend = F) +
+  labs(
+    title = "Number of Observations in Each State (2002~2010)", 
+    x = "Year", 
+    y = "Number of Observations", 
+    legend = "State"
+  ) +
   scale_x_continuous(breaks = c(2002, 2003, 2004, 2005, 2006, 
                                 2007, 2008, 2009, 2010), 
                      labels = c("2002", "2003", "2004", "2005", "2006", 
-                                "2007", "2008", "2009", "2010")) +
+                                "2007", "2008", "2009", "2010"))+
   theme_bw()
 ```
+
+
+**Comment**: As is obsivously shown in the spaghetti plot above, `r (spaghetti %>% filter(year == 2007 & sum_loco > 200))$state` (Florida) had its largest number of observations in 2007 and 2010, all over 40, much larger than any other states in that given year. The observation number of most states was less than 10 in this time period, and keep fluctuting as year changed.
+
 
 3.Make a table showing, for the years 2002, 2006, and 2010, the mean and standard deviation of the proportion of “Excellent” responses across locations in NY State.
 
 ```{r mean_sd_table}
-brfss %>% 
-  filter(locationabbr == "NY" & (year == 2002 | year == 2006 | year == 2010) & response == "Excellent") %>% 
+brfss_tidy %>% 
+  filter(state == "NY" & year %in% c(2002, 2006, 2010) & response == "Excellent") %>% 
   group_by(year) %>% 
-  summarize(mean_excellent_prop = mean(data_value, na.rm = TRUE),
-            sd_excellent_prop = sd(data_value, na.rm = TRUE)) %>% 
+  summarize(mean_excel_prop = mean(data_value, na.rm = TRUE),
+            sd_excel_prop = sd(data_value, na.rm = TRUE)) %>% 
   knitr::kable(digits = 1)
 ```
+
+**Comment**: As can be seen from the table above, the mean of the proportion of “Excellent” responses across locations in NY State in 2002 is higher than that of 2006 and 2010, which means the overall health condition was better in 2002 than in 2006 and the condition change positively in 2010. The standard deviation ranking  of the proportion of “Excellent” responses across locations in NY State in 2002 > 2006 > 2010, indicating that the variability of proportion of “Excellent” responses in 2002 is the highest, and lowest in 2010.
 
 4.For each year and state, compute the average proportion in each response category (taking the average across locations in a state). 
 
 ```{r avg_prop}
-avg_prop_rep = brfss %>% 
-  group_by(year, locationabbr, response) %>% 
+avg_prop_rep = brfss_tidy %>% 
+  group_by(year, state, response) %>% 
   summarize(avg_prop = round(mean(data_value, na.rm = TRUE), digits = 2))
+avg_prop_rep
 ```
 
 Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
+
+  
 ```{r five_panel}
-ggplot(data = avg_prop_rep, aes(x = year, y = avg_prop, color = locationabbr)) +
-    facet_grid( ~ response) +
-    geom_line() +
-    theme_bw() +
-    theme(legend.position = "bottom")
+avg_prop_rep %>% 
+  ggplot(aes(x = year, y = avg_prop, color = state)) +
+  facet_grid( ~ response) +
+  geom_line() +
+  labs(
+    y = "Average propotion",
+    x = "Year",
+    title = "Distribution of State-level Response Averages Over Time",
+    caption = "Data from the p8105.datasets package"
+  ) +
+  theme_bw() +
+  theme(legend.position = "none")
 ```
+
+**Comment**: 
+
+It is obvious that "Very good" response takes largest percent of all response, while "Poor" response accounts for lowest percentage of five response. The proportion ranking are like: "Very good" > "Good" > "Excellent" > "Fair" > "Poor". So, the overall health of citizens in selected counties is good in the time period of 2002~2010. 
+
+The proportion data of every state are kind of centralizated in a centrain value, which means that the overall health condition in each states differs in a small extent.
+
+The fluctuation across year of response "Poor" is relatively small compared with other four responses.
 
 ```{r five_plot}
 excel_rep = avg_prop_rep %>% filter(response == "Excellent")
@@ -105,36 +138,28 @@ fair_rep = avg_prop_rep %>% filter(response == "Fair")
 poor_rep = avg_prop_rep %>% filter(response == "Poor")
 
 panel_plot = function(df){
-  ggplot(data = df, aes(x = year, y = avg_prop, color = locationabbr)) +
+  ggplot(data = df, aes(x = year, y = avg_prop, color = state)) +
     geom_line() +
     theme(legend.position = "bottom")
 }
 
-panel_plot(excel_rep)
-panel_plot(vg_rep)
-panel_plot(good_rep)
-panel_plot(fair_rep)
-panel_plot(poor_rep)  
-  
+panel_plot(excel_rep)/panel_plot(vg_rep)/panel_plot(good_rep)/panel_plot(fair_rep)/panel_plot(poor_rep)
 ```
 
-```{r 什么鬼}
-ggplot(data = avg_prop_rep, aes(x = year, y = avg_prop, color = locationabbr)) +
-    facet_grid( ~ response) +
-    geom_point(alpha = .5) +
-    geom_smooth(se = FALSE) +
-    theme_bw() +
-    theme(legend.position = "bottom")
-
-```
 
 # Problem 2
 
-* Load the `instacart` data from the p8105.datasets package and take a look.
+###Load the `instacart` data from the p8105.datasets package and take a look.
 
 ```{r}
 instacart = p8105.datasets::instacart
 head(instacart)
+
+instacart %>% 
+  count(department)
+
+instacart %>% 
+  count(aisle)
 ```
 
 ### Description
@@ -143,7 +168,9 @@ The `instacart` dataset has `r ncol(instacart)` columns and `r nrow(instacart)` 
 
 The key variables are `order_id`, `product_id` and `product_name`. We can see the user `user_id` bought `product_id` which is `product_name` belonging to `department` and located in `aisle`. We can also know how frequent one customer use this app to do grocery shopping according to `days_since_prior_order` and `order_number`. 
 
-For example, the `user_id`1 made `order_id`1187899. He/she bought 11 items in `order_number`11 `days_since_prior_order`14 days after his/her last shopping, among which the `add_to_cart_order`9 was the first time order, other 10 items were reorders. `product_id`196 is Soda in `aisle`soft drinks `aisle_id`77 in `department`beverages which id is 7.
+For example, `r head(instacart, 1) %>% knitr::kable()` 
+
+the `user_id`1 made `order_id`1187899. He/she bought 11 items in `order_number`11 `days_since_prior_order`14 days after his/her last shopping, among which the `add_to_cart_order`9 was the first time order, other 10 items were reorders. `product_id`196 is Soda in `aisle`soft drinks `aisle_id`77 in `department`beverages which id is 7.
 
 ### Answers
 
@@ -152,6 +179,7 @@ For example, the `user_id`1 made `order_id`1187899. He/she bought 11 items in `o
 There are `r nrow(instacart %>% count(aisle))` aisles.
 
 `r (instacart %>% count(aisle) %>% mutate(aisle_ranking = min_rank(desc(n))) %>% filter(aisle_ranking < 4))$aisle` aisle are the top 3 aisles which most items ordered from.
+
 Among those, `r (instacart %>% count(aisle) %>% mutate(aisle_ranking = min_rank(desc(n))) %>% filter(aisle_ranking < 2))$aisle` aisle ranks first.
 
 
