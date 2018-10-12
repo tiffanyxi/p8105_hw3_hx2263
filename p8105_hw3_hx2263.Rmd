@@ -4,17 +4,14 @@ author: "Tiffany Xi"
 date: "10/5/2018"
 output: github_document
 ---
-(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)
+(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)
+
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(p8105.datasets)
 library(patchwork)
 
-knitr::opts_chunk$set(
-  fig.width = 10,
-  fig.asp = .6,
-  out.width = "90%"
-)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Problem 1
@@ -95,6 +92,7 @@ brfss_tidy %>%
 
 **Comment**: As can be seen from the table above, the mean of the proportion of “Excellent” responses across locations in NY State in 2002 is higher than that of 2006 and 2010, which means the overall health condition was better in 2002 than in 2006 and the condition change positively in 2010. The standard deviation ranking  of the proportion of “Excellent” responses across locations in NY State in 2002 > 2006 > 2010, indicating that the variability of proportion of “Excellent” responses in 2002 is the highest, and lowest in 2010.
 
+
 4.For each year and state, compute the average proportion in each response category (taking the average across locations in a state). 
 
 ```{r avg_prop}
@@ -107,10 +105,10 @@ avg_prop_rep
 Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
 
   
-```{r five_panel}
+```{r five_panel_plot}
 avg_prop_rep %>% 
   ggplot(aes(x = year, y = avg_prop, color = state)) +
-  facet_grid( ~ response) +
+  facet_grid( ~ response, scales = "free_y") +
   geom_line() +
   labs(
     y = "Average propotion",
@@ -119,7 +117,7 @@ avg_prop_rep %>%
     caption = "Data from the p8105.datasets package"
   ) +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "bottom")
 ```
 
 **Comment**: 
@@ -130,22 +128,6 @@ The proportion data of every state are kind of centralizated in a centrain value
 
 The fluctuation across year of response "Poor" is relatively small compared with other four responses.
 
-```{r five_plot}
-excel_rep = avg_prop_rep %>% filter(response == "Excellent")
-vg_rep = avg_prop_rep %>% filter(response == "Very good")
-good_rep = avg_prop_rep %>% filter(response == "Good")
-fair_rep = avg_prop_rep %>% filter(response == "Fair")
-poor_rep = avg_prop_rep %>% filter(response == "Poor")
-
-panel_plot = function(df){
-  ggplot(data = df, aes(x = year, y = avg_prop, color = state)) +
-    geom_line() +
-    theme(legend.position = "bottom")
-}
-
-panel_plot(excel_rep)/panel_plot(vg_rep)/panel_plot(good_rep)/panel_plot(fair_rep)/panel_plot(poor_rep)
-```
-
 
 # Problem 2
 
@@ -153,7 +135,7 @@ panel_plot(excel_rep)/panel_plot(vg_rep)/panel_plot(good_rep)/panel_plot(fair_re
 
 ```{r}
 instacart = p8105.datasets::instacart
-head(instacart)
+summary(instacart)
 
 instacart %>% 
   count(department)
@@ -182,24 +164,37 @@ There are `r nrow(instacart %>% count(aisle))` aisles.
 
 Among those, `r (instacart %>% count(aisle) %>% mutate(aisle_ranking = min_rank(desc(n))) %>% filter(aisle_ranking < 2))$aisle` aisle ranks first.
 
+**Comment** Nowadays, people are really having a healthy lifestyle, which is pretty happy fact for us public health students to see. Fresh or packaged fruit and veges are the most important component of everyday grocery shopping.
 
 2.Make a plot that shows the number of items ordered in each aisle. Order aisles sensibly, and organize your plot so others can read it.
 
-```{r}
-ggplot(data = instacart, aes(x = aisle)) +
-  geom_bar(position = position_stack(reverse = TRUE)) +
-  coord_flip() +
-  labs(
-      title = "The Number of Items Ordered in Each Aisle",
-      y = "the Number of Items (counts)",
-      x = "Aisle",
-      caption = "Data from the p8105.package"
-    ) +
-  theme_bw()
+```{r fig.width = 12, fig.height = 25}
+instacart %>%
+  group_by(aisle) %>%
+  summarize(num = n()) %>%
+  arrange(desc(num)) %>% 
+  ggplot(aes(x = reorder(aisle, -num), y = num)) + 
+    coord_flip() + 
+    geom_bar(stat = "identity", fill = "#DD8888") +
+    labs(
+        title = "The Number of Items Ordered in Each Aisle",
+        y = "the Number of Items (counts)",
+        x = "Aisle",
+        caption = "Data from the p8105.package"
+      ) +
+    theme_bw() +
+    theme(axis.text = element_text(size = 10))
 ```
 
 
-3.Make a table showing the most popular item aisles "baking ingredients", "dog food care", and "packaged vegetables fruits"
+**Comment**: 
+
+As is clearly shown in the barplot above, the distribution of the number of items ordered in each aisle is highly skewed to food department. Among all the items, the top 8s are fresh vegetables, fresh fruits, packaged vegetables fruits, yogurt, packaged cheese, water seltzer sparkling water, milk, chips pretzels, which the number of items are greater than 30000. 
+
+The least 6 number of items comes from beauty, frozen juice, baby accessories, baby bath body care, kitchen supplies, specialty wines champagnes aisles, the underlying reasons could be people are not used to do shopping on app when it comes to baby product, beauty and wines. They may still prefer to speciality stores.
+
+
+3.Make a table showing the most popular item in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”.
 
 ```{r}
 instacart %>% 
@@ -211,6 +206,9 @@ instacart %>%
   knitr::kable()
 ```
 
+**Comment**: As we can see from the table above, the most popular item in "baking ingredients" is Light Brown Sugar, which had been ordered 499 times. In "dog food care" aisle, the most popular item is "Snack Sticks Chicken & Rice Recipe Dog Treats", which were ordered 30 times. The most popular item in "packaged vegetables fruits" aisle is Organic Baby Spinach, it has been ordered 9784 times. The merchant should look into the most popular items data carefully in each aisle and make special plan about the position it should be put to achieve maximum sales volume.
+
+
 4.Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
 
 ```{r}
@@ -218,9 +216,14 @@ instacart %>%
   filter(product_name == "Pink Lady Apples"| product_name == "Coffee Ice Cream" ) %>% 
   group_by(product_name, order_dow) %>% 
   summarise(mean_hour = mean(order_hour_of_day)) %>% 
+  mutate(order_dow = ordered(order_dow, levels = c(0:6), 
+                        labels = c("Sunday", "Monday", "Tuesday", "Wednesday", 
+                                   "Thursday", "Friday", "Saturday"))) %>% 
   spread(key = order_dow, value = mean_hour) %>% 
-  knitr::kable(digits = 2)
+  knitr::kable(digits = 1)
 ```
+
+**Comment**: From the table, we can make assumptions that people are tend to buy Coffee Ice Cream in the afternoon at about 1 pm, maybe as after-lunch dessert.However, on Tuesday, Wednsday and Thursday, the ordering time is after 3 pm, maybe people are too busy in weekdays to think about ice cream. Pink Lady Apples are usually ordered in the morning near noon at about 11 am, which is a bit earlier than Coffee Ice Cream, so people seem prefer having apples before lunch.
 
 
 # Problem 3
