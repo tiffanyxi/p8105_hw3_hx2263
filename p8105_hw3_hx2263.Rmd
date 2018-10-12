@@ -229,7 +229,7 @@ The `noaa` dataset has `r ncol(noaa)` columns and `r nrow(noaa)` rows, which mea
 
 The key variables are `id`, `date`, `prcp`, `snow`, `snwd`, `tmax` and `tmin`. Each row in the dataset is a weather information including precipitation`prcp`, snowfall`snow`, snow depth`snwd`, maximum temperature`tmax` and min temperature`tmin` from one single weather station`id` in one day`date`. This dataset describes five core variables for all New York state weather stations from January 1, 1981 through December 31, 2010 according to `r nrow(noaa %>% distinct(id))` weather stations.
 
-Missing values is a huge issue in this dataset, the number of missing number in five core variables are `r sum(is.na(noaa$prcp))`, `r sum(is.na(noaa$snow))`, `r sum(is.na(noaa$snwd))`, `r sum(is.na(noaa$tmax))` and `r sum(is.na(noaa$tmin))`. Those are huge numbers and almost half of the whole rows doesn't have tmax and tmin. 
+Missing values is a huge issue in this dataset, the number of missing number in five core variables are `r sum(is.na(noaa$prcp))`, `r sum(is.na(noaa$snow))`, `r sum(is.na(noaa$snwd))`, `r sum(is.na(noaa$tmax))` and `r sum(is.na(noaa$tmin))`. Those are huge numbers and percentages are `r (sum(is.na(noaa$prcp)))/(nrow(noaa))`, `r (sum(is.na(noaa$snow)))/(nrow(noaa))`, `r (sum(is.na(noaa$snwd)))/(nrow(noaa))`, `r (sum(is.na(noaa$tmax)))/(nrow(noaa))` and `r (sum(is.na(noaa$tmin)))/(nrow(noaa))`, where almost half of the whole rows doesn't have tmax and tmin. 
 
 ### Answers
 
