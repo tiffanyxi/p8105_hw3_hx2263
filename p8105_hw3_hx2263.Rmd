@@ -4,7 +4,6 @@ author: "Tiffany Xi"
 date: "10/5/2018"
 output: github_document
 ---
-(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)(commenting on the results of each)
 
 ```{r setup, include=FALSE}
 library(tidyverse)
@@ -105,7 +104,7 @@ avg_prop_rep
 Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
 
   
-```{r five_panel_plot}
+```{r five_panel_plot, fig.width = 20, fig.height = 10}
 avg_prop_rep %>% 
   ggplot(aes(x = year, y = avg_prop, color = state)) +
   facet_grid( ~ response, scales = "free_y") +
@@ -135,13 +134,7 @@ The fluctuation across year of response "Poor" is relatively small compared with
 
 ```{r}
 instacart = p8105.datasets::instacart
-summary(instacart)
-
-instacart %>% 
-  count(department)
-
-instacart %>% 
-  count(aisle)
+skimr::skim(instacart)
 ```
 
 ### Description
@@ -150,9 +143,7 @@ The `instacart` dataset has `r ncol(instacart)` columns and `r nrow(instacart)` 
 
 The key variables are `order_id`, `product_id` and `product_name`. We can see the user `user_id` bought `product_id` which is `product_name` belonging to `department` and located in `aisle`. We can also know how frequent one customer use this app to do grocery shopping according to `days_since_prior_order` and `order_number`. 
 
-For example, `r head(instacart, 1) %>% knitr::kable()` 
-
-the `user_id`1 made `order_id`1187899. He/she bought 11 items in `order_number`11 `days_since_prior_order`14 days after his/her last shopping, among which the `add_to_cart_order`9 was the first time order, other 10 items were reorders. `product_id`196 is Soda in `aisle`soft drinks `aisle_id`77 in `department`beverages which id is 7.
+For example, the `user_id`1 made `order_id`1187899. He/she bought 11 items in `order_number`11 `days_since_prior_order`14 days after his/her last shopping, among which the `add_to_cart_order`9 was the first time order, other 10 items were reorders. `product_id`196 is Soda in `aisle`soft drinks `aisle_id`77 in `department`beverages which id is 7.
 
 ### Answers
 
@@ -246,6 +237,7 @@ Missing values is a huge issue in this dataset, the number of missing number in 
 
 ```{r}
 noaa_tidy = noaa %>% 
+  janitor::clean_names() %>% 
   separate(date, into = c("year", "month", "day"), sep = "-") %>% 
   mutate(pcrp_mm = ifelse(is.na(prcp), NA, prcp / 10),
          snow_mm = snow,
@@ -253,6 +245,7 @@ noaa_tidy = noaa %>%
          tmin_ºC = ifelse(is.na(tmin), NA, as.integer(tmin)/ 10)) %>% 
   select(-prcp, -snow, -tmax, -tmin)
 ```
+
 
 For snowfall, what are the most commonly observed values? Why?
 
@@ -263,42 +256,95 @@ noaa_tidy %>%
   filter(snow_ranking < 2)
 ```
 
-* For snowfall, 0 are the most commonly observed values, because snow only happens in winter which is one over four seasons, so other seasons take up three fourth days. Also, only when temperature goes below zero can snow, which takes up a smaller percentage of New York State winter temp. So 0mm snowfall is the most commonly observed values.
+For snowfall, 0 mm are the most commonly observed values, which had been observed 2008508 times. Because snow only happens in winter which is one over four seasons, so other seasons take up three fourth days. Also, only when temperature goes below zero can snow, which takes up a smaller percentage of New York State winter temp. So 0mm snowfall is the most commonly observed values.
 
 
-2.Make a two-panel plot showing the average temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
+2.Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
 
-```{r}
+```{r two_panel_plot, fig.width = 20, fig.height = 20}
 noaa_tidy %>% 
-  filter(month == "01" | month == "07") %>% 
-  group_by(year, month) %>% 
-  summarize(mean_tmax = mean(tmax_ºC, na.rm = TRUE)) %>% 
-  ggplot(aes(x = year, y = mean_tmax, color = month)) +
-  geom_point(size = 4)
-
-noaa_tidy %>% 
-  filter(month == "01" | month == "07") %>% 
-  group_by(year, month) %>% 
-  summarize(mean_tmin = mean(tmin_ºC, na.rm = TRUE)) %>% 
-  ggplot(aes(x = year, y = mean_tmin, color = month)) +
-  geom_point(size = 4)
+  filter(tmax_ºC != "NA" & (month == "01" | month == "07")) %>% 
+  group_by(id, year, month) %>% 
+  summarize(mean_temp = mean(tmax_ºC)) %>%
+  ggplot(aes(x = year, y = mean_temp, color = id)) +
+    geom_point(size = 4) +
+    labs(
+      x = "Year",
+      y = "Average Max Temp °C",
+      title = "Average Max Temperatures for January and July in New York",
+      caption = "Data from NOAA"
+    ) +
+    theme_bw() +
+    theme(legend.position = "none") +
+    theme(axis.text.x = element_text(angle = 45, size = 5)) +
+    facet_grid(~month, scales = "free")
 ```
+
+**Comment**:
+
+From the two-panel plot above, we can easily observed that the average max temperature in July in each station across years is much higher than that in July, which make sense cause summer is hotter than winter. 
+
+The average temperture points of January is more spreadout than that in July, meaning that the temp has greater variation in winter than in summer. As for the outliers, we can see that in the Janurary of 1982, 1993 and 2005, there were extremely cold observations. In the July of 1988, there was an outlier of less than 15ºC.
+
+But we don't see any strong tendency in climate change in last three decades, which may be a good thing cause there is no significant global warming effect at least in NY, NY.
+
 
 3.Make a two-panel plot showing 
 (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option);
+
+
+```{r tmax_vs_tmin, fig.width = 4, fig.height = 4}
+temp_plot = noaa_tidy %>% 
+  filter(tmax_ºC != "NA" & tmin_ºC != "NA") %>% 
+  ggplot(aes(x = tmax_ºC, y = tmin_ºC)) +
+  geom_hex() +
+  labs(
+    y = "Minimum Temperature(ºC)", 
+    x = "Maximum Temperature(ºC)",
+    title = "Max Temperatures VS Min Temperatures in New York",
+    caption = "Data from NOAA"
+  ) +
+  viridis::scale_fill_viridis(option = "plasma") +
+  theme_bw() +
+  theme(legend.position = "bottom", 
+        legend.key.width = unit(0.8, "in"))
+```
+
 (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
 
-```{r}
-ggplot(data = noaa_tidy, aes(x = year, y = tmax_ºC)) +
-  geom_point()
-```
-
-```{r}
-snow_year = noaa_tidy %>% 
+{r  fig.width = 4, fig.height = 15}
+snow_plot = noaa_tidy %>% 
   filter(snow_mm > 0 & snow_mm < 100) %>% 
-  group_by(year, snow_mm)
+  group_by(year, snow_mm) %>% 
+  ggplot(aes(x = snow_mm, y = year)) +
+  geom_density_ridges(scale = .85)
 
-#ggplot(data = snow_year, aes(x = mean(snow_mm, na.rm = TRUE))) +
-  #geom_histogram()
+
+```{r  fig.width = 10, fig.height = 15}
+snow_plot = noaa_tidy %>% 
+  select(year,snow_mm) %>% 
+  filter(snow_mm > 0 & snow_mm < 100) %>% 
+  ggplot(aes(x = snow_mm, fill = year)) + 
+  geom_density(alpha = 0.07) +
+  labs(
+    x = "Snowfall Values(mm)", 
+    y = "Density",
+    title = "Distribution of Snowfall Values (0,100) Over Year",
+    caption = "Data from NOAA"
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom", 
+        legend.direction = "horizontal", 
+        legend.key.size = unit(0.07, "in"), 
+        legend.text = element_text(size = 5))
+
+temp_plot/snow_plot
 ```
+
+**Comment**:
+
+(i)The temperture plot indicates that the minimum temperture are in positive propotion to maximum temperture, tmin increases with the climb of tmax. The light yellow hex represents the point of highest frequency where maximum temperture is about 25ºC and the minimum temperture is approximately 15ºC. 
+
+(ii)Snowfall distribution is mainly concentrated between 0 and 25, and has an obvious peak in 50mm and 75mm. The density is in negative propotion to snowfall value,so it makes sense that there are few times in near 100mm snowfall values. Snowfall distribution across different years in the last 30 years are quite identical to each other, so the snowfall is a relatively stable climate data.
+
 
