@@ -44,7 +44,7 @@ brfss_tidy %>%
   filter(n == 7)
 ```
 
-In 2002, the states which were observed at 7 locations are CT (Connecticut), FL (Florida), NC (North Carolina) `r (brfss_tidy %>% filter(year == 2002) %>% distinct(location, .keep_all = TRUE) %>% count(state) %>% filter(n == 7))$state`.
+In 2002, the states which were observed at 7 locations are `r (brfss_tidy %>% filter(year == 2002) %>% distinct(location, .keep_all = TRUE) %>% count(state) %>% filter(n == 7))$state`, which stands for Connecticut, Florida, North Carolina.
 
 **Comment** Three states were observed exatly at 7 locations in 2002, what a coincidence!
 
@@ -102,7 +102,6 @@ avg_prop_rep
 ```
 
 Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
-
   
 ```{r five_panel_plot, fig.width = 20, fig.height = 10}
 avg_prop_rep %>% 
@@ -176,7 +175,6 @@ instacart %>%
     theme_bw() +
     theme(axis.text = element_text(size = 10))
 ```
-
 
 **Comment**: 
 
@@ -261,23 +259,22 @@ For snowfall, 0 mm are the most commonly observed values, which had been observe
 
 2.Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
 
-```{r two_panel_plot, fig.width = 20, fig.height = 20}
-noaa_tidy %>% 
-  filter(tmax_ºC != "NA" & (month == "01" | month == "07")) %>% 
-  group_by(id, year, month) %>% 
-  summarize(mean_temp = mean(tmax_ºC)) %>%
-  ggplot(aes(x = year, y = mean_temp, color = id)) +
-    geom_point(size = 4) +
-    labs(
+```{r}
+noaa_tidy %>%
+  filter(tmax_ºC != "NA" & (month == "01" | month == "07")) %>%
+  group_by(id, month, year) %>%
+  summarise(mean_temp = mean(tmax_ºC)) %>%
+  ggplot(aes(x = year, y = mean_temp, group = year)) +
+  geom_boxplot() +
+  facet_grid( ~ month) +
+  labs(
       x = "Year",
       y = "Average Max Temp °C",
       title = "Average Max Temperatures for January and July in New York",
       caption = "Data from NOAA"
     ) +
-    theme_bw() +
-    theme(legend.position = "none") +
-    theme(axis.text.x = element_text(angle = 45, size = 5)) +
-    facet_grid(~month, scales = "free")
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 5))
 ```
 
 **Comment**:
@@ -291,7 +288,6 @@ But we don't see any strong tendency in climate change in last three decades, wh
 
 3.Make a two-panel plot showing 
 (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option);
-
 
 ```{r tmax_vs_tmin, fig.width = 4, fig.height = 4}
 temp_plot = noaa_tidy %>% 
@@ -312,31 +308,18 @@ temp_plot = noaa_tidy %>%
 
 (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
 
-{r  fig.width = 4, fig.height = 15}
-snow_plot = noaa_tidy %>% 
-  filter(snow_mm > 0 & snow_mm < 100) %>% 
-  group_by(year, snow_mm) %>% 
-  ggplot(aes(x = snow_mm, y = year)) +
-  geom_density_ridges(scale = .85)
-
-
-```{r  fig.width = 10, fig.height = 15}
-snow_plot = noaa_tidy %>% 
-  select(year,snow_mm) %>% 
-  filter(snow_mm > 0 & snow_mm < 100) %>% 
-  ggplot(aes(x = snow_mm, fill = year)) + 
-  geom_density(alpha = 0.07) +
-  labs(
-    x = "Snowfall Values(mm)", 
-    y = "Density",
-    title = "Distribution of Snowfall Values (0,100) Over Year",
-    caption = "Data from NOAA"
-  ) +
-  theme_bw() +
-  theme(legend.position = "bottom", 
-        legend.direction = "horizontal", 
-        legend.key.size = unit(0.07, "in"), 
-        legend.text = element_text(size = 5))
+```{r fig.width = 10, fig.height = 15}
+snow_plot = noaa_tidy %>%
+  filter(snow_mm >  0,  snow_mm < 100) %>%
+  ggplot(aes(x = year, y = snow_mm, group = year)) +
+  geom_boxplot() +
+  labs(x = "Year", 
+       y = "Snowfall Values(mm)",
+       title = "Distribution of Snowfall Values (0,100) Over Year",
+       caption = "Data from NOAA"
+       ) +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  theme(axis.text.x = element_text(angle = 45, size = 5))
 
 temp_plot/snow_plot
 ```
@@ -345,6 +328,6 @@ temp_plot/snow_plot
 
 (i)The temperture plot indicates that the minimum temperture are in positive propotion to maximum temperture, tmin increases with the climb of tmax. The light yellow hex represents the point of highest frequency where maximum temperture is about 25ºC and the minimum temperture is approximately 15ºC. 
 
-(ii)Snowfall distribution is mainly concentrated between 0 and 25, and has an obvious peak in 50mm and 75mm. The density is in negative propotion to snowfall value,so it makes sense that there are few times in near 100mm snowfall values. Snowfall distribution across different years in the last 30 years are quite identical to each other, so the snowfall is a relatively stable climate data.
+(ii)Snowfall distribution are all highly right skewed. The snowfall value is mainly concentrated between 10mm and 50mm and the median of snowfall values was quite stable and centered around 25mm. However, in 2006, the snowfall value was significantly lower than other years and had a lot of outliers. Snowfall distribution across different years in the last 30 years are quite identical to each other, so the snowfall is a relatively stable climate data.
 
 
